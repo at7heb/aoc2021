@@ -17,15 +17,15 @@ defmodule Day2 do
     |> solve()
   end
 
+  def test() do
+    read_data() |> Enum.take(5) |> IO.inspect(label: "test data")
+    |> solve()
+  end
+
   def solve(inhalt) do
     ans1= solve_problem_1(inhalt)
     ans2 = solve_problem_2(inhalt)
     IO.puts("The answers are #{ans1} and #{ans2}")
-  end
-
-  def test() do
-    read_data() |> Enum.take(5) |> IO.inspect(label: "test data")
-    |> solve()
   end
 
   def read_data() do
