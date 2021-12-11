@@ -15,7 +15,12 @@ defmodule Day6 do
   def run() do
     answer = get_input()
     |> process()
-    IO.puts("There are now #{answer} langernfish")
+    |> present()
+  end
+
+  def present({a1, a2} = _answer) do
+    IO.puts("There are now #{a1} langernfish")
+    IO.puts("Later there are #{a2} lanternfish")
   end
 
   def get_input(), do: File.read!("input.txt")
@@ -33,19 +38,23 @@ defmodule Day6 do
 
   def split(text), do: String.split(text, ",", trim: true)
 
-  def make_into_model(fish_list), do: Enum.map(fish_list, fn age -> String.to_integer(age) end)
+  def make_into_model(fish_list) do
+    fish_list = Enum.map(fish_list, fn fish_age -> String.to_integer(fish_age) end)
+    IO.inspect(fish_list, label: "fish list into model")
+    Enum.reduce(0..6,
+      Tuple.duplicate(0,9),
+      fn age, tuple -> put_elem(tuple, age, length(Enum.filter(fish_list, fn fish_age -> fish_age == age end))) end)
+    |> IO.inspect(label: "model from fish list")
+  end
 
-  def age_model(population, n), do: age_model(population, [], [], n)
+  def age_model(population, n) when n == 0, do: Enum.sum(Tuple.to_list(population))
 
-  def age_model(population, wait0, wait1, n) when n == 0, do: length(population) + length(wait0) + length(wait1)
-
-  def age_model(population, wait0, wait1, n) do
+  def age_model({p0,p1,p2,p3,p4,p5,p6,p7,p8} = population, n) do
     if n > 60 do
       IO.inspect({n, population})
     end
-    new_fish = generate_new_fish(population)
-    next_days_population = Enum.map(population, fn x -> rem(x+6, 7) end)
-    age_model(next_days_population ++ wait0, wait1, new_fish, n - 1)
+    next_days_population = {p1, p2, p3, p4, p5, p6, p0+p7, p8, p0}
+    age_model(next_days_population, n - 1)
   end
 
   def generate_new_fish(population) do
@@ -54,7 +63,7 @@ defmodule Day6 do
   end
 
   def example() do
-    answer = process("3,4,3,1,2")
-    IO.puts("There are now #{answer} langernfish")
+    process("3,4,3,1,2")
+    |> present
   end
 end
