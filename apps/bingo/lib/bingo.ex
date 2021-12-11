@@ -25,34 +25,37 @@ defmodule Bingo do
 
   """
   def new(list_of_lists) do
-    g = %__MODULE__{}
+    # g = %__MODULE__{}
     r_counts = Enum.reduce(1..5, %{}, fn ndx, count_map -> Map.put_new(count_map, ndx, 0) end)
     c_counts = Enum.reduce(1..5, %{}, fn ndx, count_map -> Map.put_new(count_map, ndx, 0) end)
     values   = Enum.reduce(1..5, %{}, fn row_number, v_map -> new_row(v_map, list_of_lists, row_number) end)
+    [25] = [length(Map.keys(values))]
     %__MODULE__{values: values, row_counts: r_counts, column_counts: c_counts}
   end
 
-  def new_row(%{} = v_map, rows_values, row_index) when is_list(row_values) when length(row_values) == 5 do
-    row_values = Enum.at(rows_values, row_index-1)
+  def new_row(%{} = v_map, row_values, row_index) when is_list(row_values) when length(row_values) == 5 do
+    row_values = Enum.at(row_values, row_index-1)
     Enum.reduce(1..5, v_map,
-        fn column_index, v -> Map.put(v, Enum.at(row_values, column_index-1), {row_index, column_index}) end)
+        fn column_index, v -> Map.put(v, Enum.at(row_values, column_index-1), {false, row_index, column_index}) end)
   end
 
   def call_number(%__MODULE__{} = g, number) when is_integer(number) do
-    call_number_aux(g, Map.get(g.values, number))
+    call_number_aux(g, number, Map.get(g.values, number))
   end
 
-  def call_number_aux(%__MODULE__{} = g, nil), do: g
+  def call_number_aux(%__MODULE__{} = g, _number, nil), do: g
 
-  def call_number_aux(%__MODULE__{} = g, {row_index, column_index}) do
+  def call_number_aux(%__MODULE__{} = g, number, {false, row_index, column_index}) do
     rc_new = 1 + Map.get(g.row_counts, row_index)
     cc_new = 1 + Map.get(g.column_counts, column_index)
     rcs_new = Map.put(g.row_counts, row_index, rc_new)
     ccs_new = Map.put(g.column_counts, column_index, cc_new)
-    %{g| row_counts: rcs_new, column_counts: ccs_new}
+    cell_new = {true, row_index, column_index}
+    values_new = Map.put(g.values, number, cell_new)
+    %{g| values: values_new, row_counts: rcs_new, column_counts: ccs_new}
   end
 
-  def is_winner?(%__MODULE__{row_counts: row_counts, column_counts: column_counts} = _g) do
+  def is_bingo?(%__MODULE__{row_counts: row_counts, column_counts: column_counts} = _g) do
     Enum.reduce(1..5, false, fn index, rv -> rv or (Map.get(row_counts, index) == 5) or (Map.get(column_counts, index) == 5) end)
   end
 end
