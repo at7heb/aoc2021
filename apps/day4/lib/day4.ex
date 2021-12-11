@@ -6,11 +6,6 @@ defmodule Day4 do
   @doc """
   Hello world.
 
-  ## Examples
-
-      iex> Day4.hello()
-      :world
-
   """
 
   def run() do
