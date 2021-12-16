@@ -13,7 +13,7 @@ defmodule Day6 do
 
   """
   def run() do
-    answer = get_input()
+    get_input()
     |> process()
     |> present()
   end

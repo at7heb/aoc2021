@@ -57,12 +57,12 @@ defmodule Day7 do
   end
 
   def make_cost_vector(size, :first) do
-    proto_vector = Enum.map(1..(2 * size - 1), fn v -> abs(size - v) end)
+    Enum.map(1..(2 * size - 1), fn v -> abs(size - v) end)
   end
 
   def make_cost_vector(size, :second) do
     ff = fn n -> div(n*(n+1),2) end
-    proto_vector = Enum.map(1..(2 * size - 1), fn v -> ff.(abs(size - v)) end)
+    Enum.map(1..(2 * size - 1), fn v -> ff.(abs(size - v)) end)
   end
 
   def calculate_costs(pv, ccv) do
