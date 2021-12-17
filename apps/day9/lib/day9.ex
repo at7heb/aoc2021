@@ -9,26 +9,107 @@ defmodule Day9 do
   end
 
   def example() do
-    input = """
+    process("""
 2199943210
 3987894921
 9856789892
 8767896789
 9899965678
-"""
-    process(input)
+""")
+
+    process("""
+2199943210
+3987892921
+9856789892
+8767896789
+9899965678
+""")
   end
 
   def process(input) do
-    String.trim(input)
-    |> String.split("\n", trim: true)    #list of lines
-    |> make_model()
-    |> analyze_model()
-    |> present()
+    solution = String.trim(input)
+              |> String.split("\n", trim: true)    #list of lines
+              |> Enum.map(fn l -> String.trim(l) end)
+              |> make_model()
+              |> analyze_model()
+    present(sum_risk_levels(solution))
+
+    solution
+    |> part_2()
+  end
+
+  def part_2(puzzle) do
+    # a basin is a list of points
+    Map.put(puzzle, :basins, [])
+    |> analyze_basins()
+    |> present_2()
+  end
+
+  def analyze_basins(%{model: _topo, low_points: [], basins: _basins} = puzzle), do: puzzle.basins
+
+  def analyze_basins(%{model: topo, low_points: [low_point|rest_of_low_points], basins: basins} = puzzle) do
+    next_basin = create_basin(topo, low_point)
+    %{puzzle| low_points: rest_of_low_points, basins: [next_basin | basins] }
+    |> analyze_basins()
+  end
+
+  def show_lines(list_of_lines) do
+    _ = Enum.map(list_of_lines, fn l -> IO.puts(l) end)
   end
 
   def present(total_value) when is_integer(total_value) do
     IO.puts("The total of the risk levels is #{total_value}")
+    total_value
+  end
+
+  def present_2(basins) when is_list(basins) do
+    # basins is a list of maps: {center: {r,c}, points: [list of points]}
+    answer =
+          Enum.sort(basins, fn b1, b2 -> length(b1.points) >= length(b2.points) end)
+          |> Enum.take(3)
+          # |> IO.inspect(label: "3 basins")
+          |> Enum.map(fn basin -> length(basin.points) end)
+          |> IO.inspect(label: "Basin sizes")
+          |> Enum.product()
+    IO.puts("The product of the area of the three largest basins is #{answer}")
+  end
+
+  def create_basin(topo, {r,c} = _low_point) do
+    %{drain: {r,c}, points: []}
+    |> add_points_to_basin( [{r,c}], topo)
+  end
+
+  def add_points_to_basin(basin, [], _topo), do: %{basin| points: Enum.uniq(basin.points)}
+
+  def add_points_to_basin(basin, [point | rest_of_points], topo) do
+    new_points = generate_neighbors(point, topo) #|> IO.inspect(label: "neighbors")
+    |> Enum.filter(fn neighbor -> ((topo_value(topo,point) < topo_value(topo, neighbor)) and
+                                   (topo_value(topo, neighbor) != 9) ) end)
+    new_basin = %{basin| points: [point|basin.points]}
+    add_points_to_basin(new_basin, new_points ++ rest_of_points, topo)
+  end
+
+  def generate_neighbors({r,c} = _point, topo) do
+    {max_r, max_c} = max_coordinate(topo)
+    cond do
+      r - 1 >= 0 -> [{r-1,c}]
+      true -> []
+    end
+    ++
+    cond do
+      c - 1 >= 0 -> [{r, c-1}]
+      true -> []
+    end
+    ++
+    cond do
+      r + 1 <= max_r -> [{r+1, c}]
+      true -> []
+    end
+    ++
+    cond do
+      c + 1 <= max_c -> [{r, c+1}]
+      true -> []
+    end
   end
 
   def analyze_model(model) do
@@ -37,7 +118,6 @@ defmodule Day9 do
     |> analyze_corners()
     |> analyze_edges()
     |> analyze_interior()
-    |> sum_risk_levels()
   end
 
   def sum_risk_levels(%{low_points: low_points} = puzzle) do
@@ -106,16 +186,16 @@ defmodule Day9 do
     analyze_interior_rows(puzzle, 1, model_height(puzzle)-2)
   end
 
-  def analyze_interior_rows(puzzle, first, last) when first == last, do: puzzle
+  def analyze_interior_rows(puzzle, first, last) when first > last, do: puzzle
 
-  def analyze_interior_rows(puzzle, first, last) when first < last do
+  def analyze_interior_rows(puzzle, first, last) when first <= last do
     analyze_interior_row_points(puzzle, first, 1, model_width(puzzle) - 2)
     |>analyze_interior_rows(first + 1, last)
   end
 
-  def analyze_interior_row_points(puzzle, _row, first, last) when first == last, do: puzzle
+  def analyze_interior_row_points(puzzle, _row, first, last) when first > last, do: puzzle
 
-  def analyze_interior_row_points(puzzle, row, first, last) when first < last do
+  def analyze_interior_row_points(puzzle, row, first, last) when first <= last do
     # do this point at {row, first}
     p0 = model_value(puzzle, row, first)
     n0 = model_value(puzzle, row - 1, first    )
@@ -135,7 +215,15 @@ defmodule Day9 do
   end
 
   def model_value(%{model: model} = _puzzle, row, col) do
-    elem(model, row)
+    topo_value(model, {row, col})
+  end
+
+  def max_coordinate(topo) do
+    {tuple_size(topo) - 1, tuple_size(elem(topo,0)) - 1}
+  end
+
+  def topo_value(topo, {row, col} = _location) when is_tuple(topo) do
+    elem(topo, row)
     |> elem(col)
   end
 
