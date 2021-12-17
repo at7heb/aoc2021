@@ -4,14 +4,19 @@ defmodule Day10 do
   """
 
   def run() do
-    File.read!("input.txt")
+    processed = File.read!("input.txt")
     |> process()
+    processed
     |> calculate_scores()
     |> present()
+
+    processed
+    |> calculate_part2_scores()
+    |> present_2()
   end
 
   def example() do
-    process("""
+    processed = process("""
 [({(<(())[]>[[{[]{<()<>>
 [(()[<>])]({[<{<<[]>>(
 {([(<{}[<>[]}>{[]{[(<()>
@@ -23,8 +28,13 @@ defmodule Day10 do
 <{([([[(<>()){}]>(<<{{
 <{([{{}}[<[[[<>{}]]]>[]]
 """)
+    processed
     |> calculate_scores()
     |> present()
+
+    processed
+    |> calculate_part2_scores()
+    |> present_2()
   end
 
   def process(s) do
@@ -41,7 +51,7 @@ defmodule Day10 do
 
   def analyze_line([], [], line), do: {:ok, line} |> IO.inspect()
 
-  def analyze_line([], _, line), do: {:incomplete, line} |> IO.inspect
+  def analyze_line([], state, line), do: {:incomplete, state, line} |> IO.inspect
 
   def analyze_line([first| rest] = _code_points, state, line) when is_list(state) do
     cond do
@@ -51,7 +61,7 @@ defmodule Day10 do
     end
   end
 
-  def analyze_or_error_stop(_first, _rest, [], line), do: {:incomplete, line}
+  def analyze_or_error_stop(_first, {} = _, state, line), do: {:incomplete, state, line}
 
   def analyze_or_error_stop(first, rest, [state_first|state_rest] = _state, line) do
     case first <> state_first do
@@ -67,11 +77,27 @@ defmodule Day10 do
   def calculate_scores(line_results) do
     #line results are {:ok, "(())"}
     # or {:error, ">", "(()>"}
-    # and maybe {:incomplete, "(()"}
+    # and maybe {:incomplete, ["("], "(()"}
     line_results
     |> Enum.filter(fn tuple -> elem(tuple, 0) == :error end) |> IO.inspect()
     |> Enum.map(fn tuple -> point_value(elem(tuple, 1)) end) |> IO.inspect()
     |> Enum.sum()
+  end
+
+  def calculate_part2_scores(line_results) do
+    #line results are {:ok, "(())"}
+    # or {:error, ">", "(()>"}
+    # and maybe {:incomplete, "(()"}
+    line_results
+    |> Enum.filter(fn tuple -> elem(tuple, 0) == :incomplete end) |> IO.inspect(label: "tuples")
+    |> Enum.map(fn tuple -> completion_score(elem(tuple, 1), 0) end) |> IO.inspect(label: "scores")
+    |> Enum.sort()
+  end
+
+  def completion_score([], value), do: value
+
+  def completion_score([first|rest], value) do
+    completion_score(rest, value * 5 + point_value_2(first))
   end
 
   def point_value(str) do
@@ -84,8 +110,25 @@ defmodule Day10 do
     end
   end
 
+  def point_value_2(str) do
+    case str do
+      "(" ->     1
+      "[" ->     2
+      "{" ->     3
+      "<" ->     4
+      _   -> -9_999_999_999
+    end
+  end
+
   def present(value) do
     IO.puts("The syntax error score is #{value}")
     value
+  end
+
+  def present_2(values) do
+    count = length(values)
+    selected = div(count,2) # select middle of an odd # in zero-based
+    [value] = Enum.slice(values, selected, 1)
+    IO.puts("The completion score = #{value}")
   end
 end
