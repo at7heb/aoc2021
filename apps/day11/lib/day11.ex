@@ -49,7 +49,7 @@ defmodule Day11 do
     puzzle = make_puzzle(text)
     {_puzzle, count} = process_further(puzzle, 0, n, 1)
     IO.puts("Total number of flashes after 100 steps = #{count}")
-    count = process_part2(make_puzzle(text), 1)
+    _count = process_part2(make_puzzle(text), 1)
   end
 
   def process_further(puzzle, sum_of_flashes, 0, _step), do: {puzzle, sum_of_flashes}
