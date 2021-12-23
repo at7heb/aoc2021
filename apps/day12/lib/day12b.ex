@@ -35,7 +35,7 @@ defmodule Day12b do
     |> normalize()              # make two pairs unless start or end
     |> make_edges()             # convert to map from node to a list of nodes
     |> find_paths()             # find them
-    |> IO.inspect(label: "after find_paths")
+    # |> IO.inspect(label: "after find_paths")
     |> present_paths()          # show them/whatever for debugging
     |> present_paths_count()    # the answer
   end
@@ -90,21 +90,19 @@ defmodule Day12b do
   def find_paths_1(%{edge_map: edge_map, current_path: [this_node | _previous_nodes] = path} = state) do
     # IO.inspect("find_paths_1")
     reachable_nodes = Map.get(edge_map, this_node)  # search from each reachable node
-    IO.inspect(reachable_nodes, label: :fp1_reachable_nodes)
-    if reachable_nodes == [] or reachable_nodes == nil do
+    # IO.inspect(reachable_nodes, label: :fp1_reachable_nodes)
+    if reachable_nodes == [] or reachable_nodes == nil or not path_is_okay?(path) do
       state # |> IO.inspect(label: "fp1 nothing reachable")
     else
-      new_edge_map = prune_edge_map(edge_map, this_node)
-      new_state = %{state | edge_map: new_edge_map}
       reachable_nodes
-      |> Enum.reduce(new_state,
-          fn node, state -> find_paths_2(%{state| edge_map: new_edge_map, current_path: [node | path]}) end)
+      |> Enum.reduce(state,
+          fn node, state -> find_paths_2(%{state| current_path: [node | path]}) end)
       # |> IO.inspect(label: "fp1 worked through nodes")
     end
   end
 
   def find_paths_2(%{current_path: ["end" | _rest] = current_path, paths: paths} = state),
-    do: (IO.inspect("find_paths_2a"); %{state| paths: [current_path | paths]})
+    do: %{state| paths: [current_path | paths]}
     # if the current node is "end", we have a path. add it to paths and return.
 
   def find_paths_2(%{} = state) do
@@ -117,21 +115,17 @@ defmodule Day12b do
     end
   end
 
-  def prune_edge_map(edge_map, node) do
-    if String.downcase(node) == node do
-      edge_map
-        |> Map.delete(node)
-        |> prune_edge_map_for_destination(node)
-    else
-      edge_map
-    end
-end
-
-  def prune_edge_map_for_destination(edge_map, node) do
-    Map.keys(edge_map)
-    |> Enum.reduce(edge_map, fn key, edge_map -> modify_map_for_key_destination(edge_map, key, node) end)
+  def path_is_okay?(path) do
+    # only interested in small caves (lower case node names)
+    small_cave_list = Enum.filter(path, fn node -> (String.downcase(node) == node) end)
+    # find small caves in path with unique names
+    unique_small_cave_list = Enum.uniq(small_cave_list)
+    # we can visit a small cave twice, but only one can be visited twice.
+    # this translates into the length of the unique list must be equal
+    # to length of the small cave list, or 1 less than the length of the
+    # small cave list
+    (length(unique_small_cave_list) + 1 >= length(small_cave_list))
   end
-
   def modify_map_for_key_destination(edge_map, key, node) do
     cond do
       Map.get(edge_map, key) == [node] ->
@@ -141,7 +135,7 @@ end
     end
   end
 
-  def present_paths(x), do: IO.inspect(x, label: "the paths")
+  def present_paths(x), do: (IO.inspect("Is a long list", label: "the paths"); x)
   def present_paths_count(x) do
     IO.puts("The number of paths is #{length(x.paths)}")
     IO.puts("The number of paths is #{length(Enum.uniq(x.paths))}")
