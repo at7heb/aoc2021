@@ -5,17 +5,41 @@ defmodule Day13 do
 
   def run() do
     File.read!("input.txt")
-    |> String.trim()
-    |> process()
-  end
-
-  def process(txt) do
-    txt
-    |> String.split("\n", trim: true)
-    |> parse()
-    |> execute_folds(1)
+    |> process(1)
     |> count_dots()
     |> present_dot_count()
+
+    File.read!("input.txt")
+    |> process(12)
+    |> present_dots()
+  end
+
+  def present_dots(%{dots: dots}) do
+    {xmin, xmax, ymin, ymax} = minmax(dots)
+    IO.inspect({xmin, xmax, ymin, ymax}, label: "xmin ... ymax")
+    Enum.reduce(ymin..ymax, "", fn y, acc -> acc <> present_dots_row(dots, y, xmin, xmax) end)
+    |> IO.puts()
+  end
+
+  def present_dots_row(dots, y, xmin, xmax) do
+    Enum.reduce(xmin..xmax, "", fn x, acc -> acc <> present_dot({x,y} in dots) end) <> "\n\r"
+  end
+
+  def present_dot(false), do: " "
+  def present_dot(true), do: "*"
+
+  def minmax(dots) do
+    {xmin, xmax} = Enum.min_max(Enum.map(dots, fn {x, _y} -> x end))
+    {ymin, ymax} = Enum.min_max(Enum.map(dots, fn {_x, y} -> y end))
+    {xmin, xmax, ymin, ymax}
+  end
+
+  def process(txt, n) do
+    txt
+    |> String.trim()
+    |> String.split("\n", trim: true)
+    |> parse()
+    |> execute_folds(n)
   end
 
   def execute_folds(%{} = state, 0), do: state
